@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -o pipefail
 
-#
 # Please run docker login before if needed and check the host w.r.t. the target architecture...
+
+#
+# Build-and-push script
+# - Pass directories as arguments (or set ARCHDIRS env var)
+# - Root Dockerfile in each directory is tagged as :latest by default
+# - Subdirectories are processed so exact names (e.g., "buster") come before
+#   names that start with that prefix (e.g., "buster-for-codac")
 #
 
 # If you want a default, set archdirs=("pi") here.
@@ -57,25 +63,26 @@ elif [ -n "${ARCHDIRS-}" ]; then
   read -r -a archdirs <<< "$tmp"
 fi
 
-# If no directories configured or passed, show help and exit
 if [ "${#archdirs[@]}" -eq 0 ]; then
   printf "${RED}No directories specified.${RESET}\n"
   print_help
   exit 1
 fi
 
+if ! command -v docker >/dev/null 2>&1; then
+  printf "${RED}docker not found. Install Docker and try again.${RESET}\n"
+  exit 1
+fi
+
 printf "\n${YELLOW}Please run docker login before if needed...${RESET}\n\n"
 
-# Process each configured directory
 shopt -s nullglob
 for archdir in "${archdirs[@]}"; do
   # Trim whitespace
   archdir="${archdir#"${archdir%%[![:space:]]*}"}"
   archdir="${archdir%"${archdir##*[![:space:]]}"}"
 
-  if [ -z "$archdir" ]; then
-    continue
-  fi
+  [ -n "$archdir" ] || continue
 
   if [ ! -d "$archdir" ]; then
     printf "\n${RED}Directory '%s' not found. Skipping.${RESET}\n\n" "$archdir"
@@ -100,8 +107,51 @@ for archdir in "${archdirs[@]}"; do
     fi
   fi
 
-  # Then build each subdirectory under archdir
-  for dir in "$archdir"/*/; do
+  # Collect subdirectories
+  dirs=()
+  for d in "$archdir"/*/; do
+    [ -d "$d" ] || continue
+    dirs+=("$d")
+  done
+
+  if [ "${#dirs[@]}" -eq 0 ]; then
+    printf "${YELLOW}No subdirectories in %s, skipping.${RESET}\n" "$archdir"
+    continue
+  fi
+
+  # Build sortable lines: prefix<TAB>is_exact<TAB>basename<TAB>fullpath
+  tmpfile=$(mktemp) || { printf "${RED}Failed to create temp file${RESET}\n"; exit 1; }
+  for d in "${dirs[@]}"; do
+    bn=$(basename "$d")
+    prefix="${bn%%-*}"
+    if [ "$bn" = "$prefix" ]; then
+      is_exact=0
+    else
+      is_exact=1
+    fi
+    printf '%s\t%s\t%s\t%s\n' "$prefix" "$is_exact" "$bn" "$d" >> "$tmpfile"
+  done
+
+  # Choose sort command (prefer gsort on macOS if installed)
+  if command -v gsort >/dev/null 2>&1; then
+    SORT_CMD=(gsort -t$'\t' -k1,1 -k2,2n -k3,3)
+  else
+    SORT_CMD=(sort -t$'\t' -k1,1 -k2,2n -k3,3)
+  fi
+
+  # Produce sorted list of full paths into a temporary file
+  "${SORT_CMD[@]}" "$tmpfile" | awk -F'\t' '{print $4}' > "${tmpfile}.sorted"
+
+  # Read sorted paths into array
+  sorted_dirs=()
+  while IFS= read -r path; do
+    sorted_dirs+=("$path")
+  done < "${tmpfile}.sorted"
+
+  rm -f "$tmpfile" "${tmpfile}.sorted"
+
+  # Iterate sorted_dirs
+  for dir in "${sorted_dirs[@]}"; do
     [ -d "$dir" ] || continue
     name=$(basename "$dir")
     src="$dir"
@@ -116,5 +166,6 @@ for archdir in "${archdirs[@]}"; do
       printf "\n${RED}ERROR: build failed for %s/%s:%s${RESET}\n\n" "$repo" "$archdir" "$name"
     fi
   done
+
 done
 shopt -u nullglob
