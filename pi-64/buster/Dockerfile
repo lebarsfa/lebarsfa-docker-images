@@ -1,4 +1,4 @@
-FROM arm64v8/debian:buster
+FROM balenalib/aarch64-debian:buster-build
 RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
 	printf '%s\n' \
 	  'deb http://archive.debian.org/debian/ buster main contrib non-free' \

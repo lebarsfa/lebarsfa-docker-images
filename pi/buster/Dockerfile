@@ -1,4 +1,4 @@
-FROM balenalib/rpi:buster-build
+FROM balenalib/rpi-raspbian:buster
 RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
 	printf '%s\n' \
 	  'deb https://legacy.raspbian.org/raspbian/ buster main rpi firmware' \
