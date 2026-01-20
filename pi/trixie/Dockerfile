@@ -1,4 +1,4 @@
-FROM balenalib/rpi:trixie-build
+FROM lebarsfa/pi:trixie-build
 RUN apt-get -q update --allow-releaseinfo-change && export DEBIAN_FRONTEND=noninteractive && export UCF_FORCE_CONFFOLD=1 && apt-get -y install \
 	sudo lsb-release build-essential wget cmake libopencv-dev \
 	--no-install-recommends && \
