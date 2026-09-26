@@ -22,6 +22,11 @@ sudo apt-get install qemu-system binfmt-support qemu-user-static
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 ```
 
+If you are on `amd64` and wants to build an image for `arm64`, you might need to first get the image like this so that the correct platform is used by default for this image:
+```bash
+docker pull --platform linux/arm64 arm64v8/ubuntu:resolute
+```
+
 GUI prerequisites for some images or tests:
 ```bash
 xhost +local:$(id -un)
