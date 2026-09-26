@@ -44,6 +44,8 @@ print_help() {
   printf "${YELLOW}Notes:${RESET}\n"
   printf "  - Run docker login before if needed and check the host w.r.t. the target architecture...\n"
   printf "  - Root Dockerfile in each directory is tagged as :%s by default.\n" "$default_root_tag"
+  printf "  - You can set DOCKERARGS environment variable to pass additional arguments to docker build, e.g.\n"
+  printf "    DOCKERARGS=\"--platform linux/arm64\"\n"
   printf "  - You can set ARCHDIRS environment variable as a fallback.\n"
 }
 
@@ -96,7 +98,7 @@ for archdir in "${archdirs[@]}"; do
     name="$default_root_tag"
     src="$archdir"
     printf "\n${CYAN}Building and pushing %s/%s:%s from %s${RESET}\n\n" "$repo" "$archdir" "$name" "$src"
-    if docker build --progress=plain -t "${repo}/${archdir}:${name}" "$src"; then
+    if docker build ${DOCKERARGS} --progress=plain -t "${repo}/${archdir}:${name}" "$src"; then
       if docker push "${repo}/${archdir}:${name}"; then
         printf "\n${GREEN}SUCCESS: built and pushed %s/%s:%s${RESET}\n\n" "$repo" "$archdir" "$name"
       else
@@ -156,7 +158,7 @@ for archdir in "${archdirs[@]}"; do
     name=$(basename "$dir")
     src="$dir"
     printf "\n${CYAN}Building and pushing %s/%s:%s from %s${RESET}\n\n" "$repo" "$archdir" "$name" "$src"
-    if docker build --progress=plain -t "${repo}/${archdir}:${name}" "$src"; then
+    if docker build ${DOCKERARGS} --progress=plain -t "${repo}/${archdir}:${name}" "$src"; then
       if docker push "${repo}/${archdir}:${name}"; then
         printf "\n${GREEN}SUCCESS: built and pushed %s/%s:%s${RESET}\n\n" "$repo" "$archdir" "$name"
       else
