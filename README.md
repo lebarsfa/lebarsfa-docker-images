@@ -19,6 +19,7 @@ Prerequisites for some images:
 ```bash
 #sudo apt-get install qemu binfmt-support qemu-user-static
 sudo apt-get install qemu-system binfmt-support qemu-user-static
+sudo apt-get install qemu-system binfmt-support qemu-user
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 ```
 
