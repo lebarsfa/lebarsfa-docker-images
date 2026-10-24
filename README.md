@@ -1,5 +1,5 @@
 # lebarsfa-docker-images
-https://hub.docker.com/repositories/lebarsfa
+https://hub.docker.com/u/lebarsfa
 
 You might want to check your current architecture with:
 ```bash
